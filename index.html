@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pembuat Kartu Presensi Siswa</title>
+<meta name="theme-color" content="#1800ad">
+<link rel="icon" href="data:,">
+<style>
+  @font-face { font-family: "MontserratKartu"; src: url("assets/Montserrat-Bold.ttf") format("truetype"); font-weight: 700; }
+  :root {
+    --biru: #1800ad; --biru2: #004aad; --muda: #eef2ff; --garis: #dde3f0;
+    --teks: #1b1f2a; --abu: #667085; --bg: #f5f7fb; --kuning: #f5c400; --merah: #c62828;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--teks); }
+  header { background: linear-gradient(120deg, var(--biru), var(--biru2)); color: #fff; padding: 18px 16px 22px; }
+  header .wrap { max-width: 1100px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 1.35rem; letter-spacing: .2px; }
+  header p { margin: 4px 0 0; opacity: .85; font-size: .92rem; }
+  main { max-width: 1100px; margin: -10px auto 40px; padding: 0 12px; display: grid; gap: 14px; grid-template-columns: 1fr; }
+  @media (min-width: 960px) { main { grid-template-columns: 430px 1fr; align-items: start; } .kanan { position: sticky; top: 12px; } }
+  .panel { background: #fff; border: 1px solid var(--garis); border-radius: 14px; padding: 16px; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+  .panel + .panel { margin-top: 14px; }
+  h2 { font-size: 1rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  h2 .no { width: 24px; height: 24px; border-radius: 50%; background: var(--biru); color: #fff; font-size: .8rem; display: inline-grid; place-items: center; flex: none; }
+  .jumlah-baris { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--garis); font-size: .88rem; font-weight: 600; color: var(--abu); }
+  .jumlah { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; flex: 1; }
+  .jumlah button { font: inherit; font-weight: 700; font-size: .95rem; padding: 7px 0; border-radius: 8px; border: 1.5px solid var(--garis); background: #fff; color: var(--biru); cursor: pointer; }
+  .jumlah button[aria-pressed="true"] { background: var(--biru); border-color: var(--biru); color: #fff; }
+  .hint { color: var(--abu); font-size: .82rem; margin: 8px 0 0; }
+  .cari { position: relative; margin-bottom: 12px; }
+  input, select { font: inherit; font-size: 16px; width: 100%; padding: 10px 11px; border: 1.5px solid var(--garis); border-radius: 9px; background: #fff; color: var(--teks); }
+  input:focus, select:focus { outline: none; border-color: var(--biru2); box-shadow: 0 0 0 3px rgba(0,74,173,.12); }
+  .hasil { list-style: none; margin: 4px 0 0; padding: 4px; border: 1px solid var(--garis); border-radius: 10px; background: #fff; position: absolute; left: 0; right: 0; z-index: 5; max-height: 280px; overflow: auto; box-shadow: 0 8px 24px rgba(16,24,40,.12); }
+  .hasil li button { all: unset; display: flex; justify-content: space-between; gap: 10px; width: 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 7px; cursor: pointer; }
+  .hasil li button:hover, .hasil li button:focus { background: var(--muda); }
+  .hasil .k { color: var(--abu); font-size: .85rem; flex: none; }
+  .slot { border: 1px solid var(--garis); border-radius: 12px; padding: 12px; margin-top: 10px; background: #fcfdff; }
+  .slot.isi { border-color: #b9c6ec; }
+  .slot .judul { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: .9rem; margin-bottom: 8px; color: var(--biru); }
+  .slot .judul button { font: inherit; font-size: .8rem; font-weight: 600; border: none; background: none; color: var(--abu); cursor: pointer; padding: 2px 4px; }
+  .baris { display: grid; grid-template-columns: 92px 1fr; gap: 8px; }
+  .slot label.tampil { display: block; margin-top: 8px; font-size: .78rem; color: var(--abu); }
+  .slot label.tampil input { margin-top: 4px; }
+  .pratinjau { width: 100%; border-radius: 8px; border: 1px solid var(--garis); background: #fff; display: block; }
+  .aksi { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+  .tombol { font: inherit; font-weight: 700; font-size: 1rem; padding: 13px 20px; border-radius: 11px; border: none; background: var(--biru); color: #fff; cursor: pointer; flex: 1 1 auto; }
+  .tombol:disabled { background: #a9b2c8; cursor: not-allowed; }
+  .status { font-size: .88rem; color: var(--abu); min-height: 1.2em; margin-top: 10px; }
+  .status.galat { color: var(--merah); }
+  .info { font-size: .8rem; color: var(--abu); margin-top: 6px; }
+  footer { text-align: center; color: var(--abu); font-size: .78rem; padding: 0 12px 24px; }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>Pembuat Kartu Presensi Siswa</h1>
+  <p>SD Islam Plus Baitul Maal · hasil PDF ukuran F4 (215 × 330 mm)</p>
+</div></header>
+
+<main>
+  <div class="kiri">
+    <section class="panel">
+      <h2><span class="no">1</span>Pilih siswa <span id="jml" style="margin-left:auto;font-weight:500;font-size:.78rem;color:var(--abu)"></span></h2>
+      <div class="cari">
+        <input type="search" id="cari" placeholder="Cari nama siswa atau kelas (mis. 4B1)…" autocomplete="off" aria-label="Cari nama siswa atau kelas">
+        <ul class="hasil" id="hasil" hidden></ul>
+      </div>
+      <div id="slots"></div>
+      <div class="jumlah-baris">
+        <span>Kartu per lembar</span>
+        <div class="jumlah" id="jumlah" role="group" aria-label="Jumlah kartu per lembar"></div>
+      </div>
+      <p class="hint">Untuk mencetak beberapa siswa sekaligus dalam satu lembar F4, pilih jumlah 2–5.</p>
+    </section>
+  </div>
+
+  <div class="kanan">
+    <section class="panel">
+      <h2><span class="no">2</span>Pratinjau &amp; unduh</h2>
+      <canvas id="pratinjau" class="pratinjau" aria-label="Pratinjau lembar kartu"></canvas>
+      <div class="aksi">
+        <button class="tombol" id="buat" disabled>Buat &amp; Unduh PDF</button>
+      </div>
+      <div class="status" id="status">Memuat data…</div>
+      <div class="info">Cetak dengan ukuran kertas F4/Folio, skala 100% (“Actual size”), tanpa “Fit to page”.</div>
+    </section>
+  </div>
+</main>
+<footer>Data &amp; QR tersimpan di situs ini; PDF dibuat langsung di perangkat Anda.</footer>
+
+<script src="assets/pdf-lib.min.js"></script>
+<script src="assets/fontkit.umd.min.js"></script>
+<script>
+(() => {
+  // ---------- Tata letak (satuan: pt pada template SVG 935.25 × 612) ----------
+  const TPL_W = 935.25, TPL_H = 612;
+  const PAGE_W = 330, PAGE_H = 215;               // mm, F4 landscape
+  const PT_MM = 25.4 / 72;
+  const CARD_CX = [129.0, 297.8, 466.5, 635.6, 804.8];
+  const QR_X = [100.321, 269.336, 438.351, 607.199, 776.382];
+  const QR_Y = 223.477, QR_S = 56.216;
+  const QR_SRC = 290, QR_CROP = 30;                // file QR 290 px, buang tepi putih 30 px
+  const NAMA = { base: 176.4, cover: [164.6, 180.9], size: 8.2, min1: 6.8, max2: 7.2, lines2: [171.3, 179.2] };
+  const KELAS = { base: 213.8, cover: [201.6, 217.6], size: 8.2 };
+  const MAX_W = 114, COVER_HALF = 59.2;
+
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $('status');
+  let siswa = [], kelasList = [], n = 1;
+  const slots = Array.from({ length: 5 }, () => ({ idx: -1, kelas: '', tampil: '' }));
+  const tplCache = {}, qrCache = {};
+
+  const setStatus = (t, galat = false) => { statusEl.textContent = t; statusEl.classList.toggle('galat', galat); };
+
+  // ---------- Pemuatan aset ----------
+  function loadImg(src) {
+    return new Promise((res, rej) => {
+      const im = new Image();
+      im.onload = async () => { try { if (im.decode) await im.decode(); } catch (e) {} res(im); };
+      im.onerror = () => rej(new Error('Gagal memuat ' + src));
+      im.src = src;
+    });
+  }
+  const getTpl = (k) => tplCache[k] || (tplCache[k] = loadImg(`template/kartu-${k}.svg`));
+  function getQr(code) {
+    if (!qrCache[code]) {
+      qrCache[code] = loadImg(`qr/${code}.png`).then((im) => {
+        const s = QR_SRC - QR_CROP * 2, c = document.createElement('canvas');
+        c.width = c.height = s;
+        const x = c.getContext('2d');
+        x.drawImage(im, QR_CROP, QR_CROP, s, s, 0, 0, s, s);
+        return { canvas: c, dataUrl: c.toDataURL('image/png') };
+      });
+    }
+    return qrCache[code];
+  }
+
+  // ---------- Ukur & susun teks ----------
+  const mctx = document.createElement('canvas').getContext('2d');
+  const lebar = (t, size) => { mctx.font = `700 ${size * 10}px MontserratKartu`; return mctx.measureText(t).width / 10; };
+
+  function susunNama(t) {
+    const w = lebar(t, NAMA.size);
+    if (w <= MAX_W) return [{ t, size: NAMA.size, y: NAMA.base }];
+    const s1 = NAMA.size * MAX_W / w;
+    if (s1 >= NAMA.min1) return [{ t, size: s1, y: NAMA.base }];
+    const kata = t.split(' ');
+    let best = null;
+    for (let i = 1; i < kata.length; i++) {
+      const a = kata.slice(0, i).join(' '), b = kata.slice(i).join(' ');
+      const m = Math.max(lebar(a, 1), lebar(b, 1));
+      if (!best || m < best.m) best = { a, b, m };
+    }
+    if (!best) return [{ t, size: s1, y: NAMA.base }];
+    const s2 = Math.min(NAMA.max2, MAX_W / best.m);
+    return [{ t: best.a, size: s2, y: NAMA.lines2[0] }, { t: best.b, size: s2, y: NAMA.lines2[1] }];
+  }
+  function susunKelas(t) {
+    const w = lebar(t, KELAS.size);
+    return [{ t, size: w <= MAX_W ? KELAS.size : KELAS.size * MAX_W / w, y: KELAS.base }];
+  }
+
+  function tataLetak() {
+    const items = [];
+    for (let i = 0; i < n; i++) {
+      const sl = slots[i], cx = CARD_CX[i];
+      items.push({ jenis: 'tutup', x: cx - COVER_HALF, y: NAMA.cover[0], w: COVER_HALF * 2, h: NAMA.cover[1] - NAMA.cover[0] });
+      items.push({ jenis: 'tutup', x: cx - COVER_HALF, y: KELAS.cover[0], w: COVER_HALF * 2, h: KELAS.cover[1] - KELAS.cover[0] });
+      items.push({ jenis: 'tutup', x: QR_X[i] + 4.6, y: QR_Y + 4.6, w: QR_S - 9.2, h: QR_S - 9.2 });
+      if (sl.idx < 0) continue;
+      const s = siswa[sl.idx];
+      for (const b of susunNama(sl.tampil.trim() || s.nama)) items.push({ jenis: 'teks', cx, ...b });
+      for (const b of susunKelas(s.kelas)) items.push({ jenis: 'teks', cx, ...b });
+      const q = QR_S * QR_CROP / QR_SRC;
+      items.push({ jenis: 'qr', code: s.qr, x: QR_X[i] + q, y: QR_Y + q, s: QR_S - 2 * q });
+    }
+    return items;
+  }
+
+  // ---------- Gambar ke canvas (pratinjau) ----------
+  async function gambar(canvas, wPx, { latar = true, isi = true } = {}) {
+    const hPx = Math.round(wPx * PAGE_H / PAGE_W);
+    canvas.width = wPx; canvas.height = hPx;
+    const kx = wPx / TPL_W, ky = hPx / TPL_H;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, wPx, hPx);
+    const tpl = await getTpl(n);
+    ctx.drawImage(tpl, 0, 0, wPx, hPx);
+    const items = tataLetak();
+    ctx.fillStyle = '#fff';
+    for (const it of items) if (it.jenis === 'tutup') ctx.fillRect(it.x * kx, it.y * ky, it.w * kx, it.h * ky);
+    if (!isi) return canvas;
+    ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    for (const it of items) {
+      if (it.jenis === 'teks') {
+        ctx.font = `700 ${it.size * kx}px MontserratKartu`;
+        ctx.fillText(it.t, it.cx * kx, it.y * ky);
+      } else if (it.jenis === 'qr') {
+        const q = await getQr(it.code);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(q.canvas, it.x * kx, it.y * ky, it.s * kx, it.s * ky);
+        ctx.imageSmoothingEnabled = true;
+      }
+    }
+    return canvas;
+  }
+
+  let antre = 0;
+  async function perbaruiPratinjau() {
+    const id = ++antre;
+    const cv = $('pratinjau');
+    const w = Math.min(2200, Math.round(cv.clientWidth * (window.devicePixelRatio || 1)) || 1000);
+    const tmp = document.createElement('canvas');
+    try {
+      await gambar(tmp, w);
+      if (id !== antre) return;
+      cv.width = tmp.width; cv.height = tmp.height;
+      cv.getContext('2d').drawImage(tmp, 0, 0);
+    } catch (e) { setStatus(e.message, true); }
+  }
+
+  // ---------- PDF (template vektor + teks vektor + QR asli) ----------
+  const bytesCache = {};
+  const ambil = (url) => bytesCache[url] || (bytesCache[url] = fetch(url).then((r) => { if (!r.ok) throw new Error(url + ' tidak ditemukan'); return r.arrayBuffer(); }));
+
+  async function buatPdf() {
+    const btn = $('buat');
+    btn.disabled = true; setStatus('Membuat PDF…');
+    try {
+      const { PDFDocument, rgb } = PDFLib;
+      const PW = PAGE_W / PT_MM, PH = PAGE_H / PT_MM;   // ukuran halaman dalam pt
+      const kx = PW / TPL_W, ky = PH / TPL_H;
+      const doc = await PDFDocument.create();
+      doc.registerFontkit(fontkit);
+      const [tplBytes, fontBytes] = await Promise.all([ambil(`template/kartu-${n}.pdf`), ambil('assets/Montserrat-Bold.ttf')]);
+      const [tpl] = await doc.embedPdf(tplBytes, [0]);
+      const font = await doc.embedFont(fontBytes, { subset: true });
+      const page = doc.addPage([PW, PH]);
+      page.drawPage(tpl, { x: 0, y: 0, width: PW, height: PH });
+      const putih = rgb(1, 1, 1), hitam = rgb(0, 0, 0);
+      for (const it of tataLetak()) {
+        if (it.jenis === 'tutup') {
+          page.drawRectangle({ x: it.x * kx, y: PH - (it.y + it.h) * ky, width: it.w * kx, height: it.h * ky, color: putih });
+        } else if (it.jenis === 'teks') {
+          const size = it.size * kx, w = font.widthOfTextAtSize(it.t, size);
+          page.drawText(it.t, { x: it.cx * kx - w / 2, y: PH - it.y * ky, size, font, color: hitam });
+        } else if (it.jenis === 'qr') {
+          const q = await getQr(it.code);
+          const img = await doc.embedPng(q.dataUrl);
+          page.drawImage(img, { x: it.x * kx, y: PH - (it.y + it.s) * ky, width: it.s * kx, height: it.s * ky });
+        }
+      }
+      doc.setTitle('Kartu Presensi Siswa');
+      const blob = new Blob([await doc.save()], { type: 'application/pdf' });
+      const dipilih = slots.slice(0, n).map((s) => siswa[s.idx]);
+      const kelas = [...new Set(dipilih.map((s) => s.kelas))].join('-');
+      const nama = n === 1 ? '_' + dipilih[0].nama.replace(/[^\w]+/g, '-') : `_${n}-siswa`;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = `Kartu-Presensi_${kelas}${nama}.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+      setStatus('PDF selesai dibuat dan diunduh.');
+    } catch (e) {
+      console.error(e); setStatus('Gagal membuat PDF: ' + e.message, true);
+    } finally { cekSiap(); }
+  }
+
+  // ---------- Antarmuka ----------
+  function cekSiap() {
+    const kurang = slots.slice(0, n).filter((s) => s.idx < 0).length;
+    $('buat').disabled = kurang > 0;
+    if (kurang) setStatus(`Lengkapi ${kurang} kartu lagi untuk membuat PDF.`);
+    else if (!statusEl.classList.contains('galat') && !/selesai/.test(statusEl.textContent)) setStatus('Siap dibuat.');
+  }
+
+  function renderJumlah() {
+    const el = $('jumlah'); el.innerHTML = '';
+    for (let k = 1; k <= 5; k++) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = k; b.setAttribute('aria-pressed', k === n);
+      b.setAttribute('aria-label', `${k} kartu`);
+      b.onclick = () => { n = k; renderJumlah(); renderSlots(); setStatus(''); cekSiap(); perbaruiPratinjau(); };
+      el.appendChild(b);
+    }
+  }
+
+  function opsi(sel, items, nilai, kosong) {
+    sel.innerHTML = '';
+    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = kosong; sel.appendChild(o0);
+    for (const [v, t] of items) { const o = document.createElement('option'); o.value = v; o.textContent = t; if (String(v) === String(nilai)) o.selected = true; sel.appendChild(o); }
+  }
+
+  function renderSlots() {
+    const wrap = $('slots'); wrap.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+      const sl = slots[i];
+      const d = document.createElement('div'); d.className = 'slot' + (sl.idx >= 0 ? ' isi' : '');
+      d.innerHTML = `<div class="judul"><span>Kartu ${i + 1}</span>${sl.idx >= 0 ? '<button type="button">Kosongkan</button>' : ''}</div>
+        <div class="baris"><select aria-label="Kelas kartu ${i + 1}"></select><select aria-label="Nama siswa kartu ${i + 1}"></select></div>
+        ${sl.idx >= 0 ? `<label class="tampil">Nama yang tercetak (boleh disingkat)<input type="text"></label>` : ''}`;
+      const [sk, sn] = d.querySelectorAll('select');
+      opsi(sk, kelasList.map((k) => [k, k]), sl.kelas, 'Kelas');
+      const daftar = siswa.map((s, j) => [j, s]).filter(([, s]) => s.kelas === sl.kelas).map(([j, s]) => [j, s.nama]);
+      opsi(sn, daftar, sl.idx, sl.kelas ? 'Pilih nama…' : '← pilih kelas dulu');
+      sn.disabled = !sl.kelas;
+      sk.onchange = () => { sl.kelas = sk.value; sl.idx = -1; sl.tampil = ''; renderSlots(); cekSiap(); perbaruiPratinjau(); };
+      sn.onchange = () => { isiSlot(i, sn.value === '' ? -1 : +sn.value); };
+      const kos = d.querySelector('.judul button');
+      if (kos) kos.onclick = () => { slots[i] = { idx: -1, kelas: sl.kelas, tampil: '' }; renderSlots(); cekSiap(); perbaruiPratinjau(); };
+      const inp = d.querySelector('.tampil input');
+      if (inp) { inp.value = sl.tampil || siswa[sl.idx].nama; inp.oninput = () => { sl.tampil = inp.value; perbaruiPratinjau(); }; }
+      wrap.appendChild(d);
+    }
+  }
+
+  function isiSlot(i, idx) {
+    const sl = slots[i];
+    sl.idx = idx; sl.tampil = idx >= 0 ? siswa[idx].nama : '';
+    if (idx >= 0) { sl.kelas = siswa[idx].kelas; getQr(siswa[idx].qr).catch(() => setStatus('QR untuk ' + siswa[idx].nama + ' tidak ditemukan.', true)); }
+    setStatus(''); renderSlots(); cekSiap(); perbaruiPratinjau();
+  }
+
+  // Pencarian
+  const norm = (t) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  function cari() {
+    const q = norm($('cari').value.trim()), ul = $('hasil');
+    ul.innerHTML = '';
+    if (q.length < 2) { ul.hidden = true; return; }
+    const kata = q.split(/\s+/);
+    const cocok = siswa.map((s, j) => [j, s]).filter(([, s]) => { const t = norm(s.nama + ' ' + s.kelas); return kata.every((k) => t.includes(k)); }).slice(0, 30);
+    if (!cocok.length) { ul.innerHTML = '<li style="padding:9px 10px;color:var(--abu)">Tidak ditemukan</li>'; ul.hidden = false; return; }
+    for (const [j, s] of cocok) {
+      const li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button'; b.innerHTML = `<span></span><span class="k"></span>`;
+      b.firstChild.textContent = s.nama; b.lastChild.textContent = s.kelas;
+      b.onclick = () => {
+        let i = slots.slice(0, n).findIndex((x) => x.idx < 0);
+        if (i < 0) {
+          if (n === 1) i = 0;   // mode 1 siswa: langsung ganti
+          else { setStatus('Semua kartu sudah terisi. Kosongkan salah satu kartu, atau tambah jumlah kartu per lembar.', true); $('hasil').hidden = true; return; }
+        }
+        $('cari').value = ''; ul.hidden = true; isiSlot(i, j);
+      };
+      li.appendChild(b); ul.appendChild(li);
+    }
+    ul.hidden = false;
+  }
+  $('cari').addEventListener('input', cari);
+  $('cari').addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('hasil').hidden = true; } if (e.key === 'Enter') { const b = $('hasil').querySelector('button'); if (b) b.click(); } });
+  document.addEventListener('click', (e) => { if (!e.target.closest('.cari')) $('hasil').hidden = true; });
+  $('buat').addEventListener('click', buatPdf);
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(perbaruiPratinjau, 200); });
+
+  // ---------- Mulai ----------
+  (async () => {
+    renderJumlah();
+    try {
+      const [data] = await Promise.all([fetch('data/siswa.json').then((r) => { if (!r.ok) throw new Error('data/siswa.json tidak ditemukan'); return r.json(); }), document.fonts.load('700 10px MontserratKartu')]);
+      siswa = data;
+      kelasList = [...new Set(siswa.map((s) => s.kelas))].sort((a, b) => a.localeCompare(b, 'id', { numeric: true }));
+      renderSlots(); $('jml').textContent = `${siswa.length} siswa · ${kelasList.length} kelas`;
+      cekSiap(); perbaruiPratinjau();
+      if (window.matchMedia('(min-width: 960px)').matches) $('cari').focus();
+    } catch (e) {
+      setStatus('Gagal memuat data: ' + e.message + (location.protocol === 'file:' ? ' — buka lewat GitHub Pages atau server lokal, bukan klik ganda file.' : ''), true);
+    }
+  })();
+})();
+</script>
+</body>
+</html>
